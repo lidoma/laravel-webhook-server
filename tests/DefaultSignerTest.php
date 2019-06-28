@@ -15,7 +15,7 @@ class DefaultSignerTest extends TestCase
 
         $this->assertEquals(
             '345611a3626cf5e080a7a412184001882ab231b8bdb465dc76dbf709f01f210a',
-            $signature,
+            $signature
         );
     }
 
@@ -26,7 +26,7 @@ class DefaultSignerTest extends TestCase
 
         $this->assertEquals(
             config('webhook-server.signature_header_name'),
-            $signer->signatureHeaderName(),
+            $signer->signatureHeaderName()
         );
     }
 }
