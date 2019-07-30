@@ -75,9 +75,10 @@ class CallWebhookJob implements ShouldQueue
             }
 
             $this->dispatchEvent(WebhookCallSucceededEvent::class);
-
+            
+            return;
         } catch (Exception $exception) {
-            /** @var \Spatie\WebhookServer\BackoffStrategy\BackoffStrategy $backoffStrategry */
+            /** @var \Spatie\WebhookServer\BackoffStrategy\BackoffStrategy $backoffStrategy */
             $backoffStrategy = app($this->backoffStrategyClass);
 
             $waitInSeconds = $backoffStrategy->waitInSecondsAfterAttempt($this->attempts());
