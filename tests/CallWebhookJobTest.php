@@ -3,12 +3,14 @@
 namespace Spatie\WebhookServer\Tests;
 
 use GuzzleHttp\Client;
-use Illuminate\Support\Facades\Event;
+use Mockery\MockInterface;
 use Spatie\TestTime\TestTime;
-use Spatie\WebhookServer\Events\FinalWebhookCallFailedEvent;
-use Spatie\WebhookServer\Events\WebhookCallFailedEvent;
-use Spatie\WebhookServer\Tests\TestClasses\TestClient;
+use Illuminate\Support\Facades\Event;
 use Spatie\WebhookServer\WebhookCall;
+use Spatie\WebhookServer\Tests\TestClasses\TestClient;
+use Spatie\WebhookServer\Events\WebhookCallFailedEvent;
+use Spatie\WebhookServer\Events\FinalWebhookCallFailedEvent;
+use Spatie\WebhookServer\BackoffStrategy\ExponentialBackoffStrategy;
 
 class CallWebhookJobTest extends TestCase
 {
@@ -51,7 +53,6 @@ class CallWebhookJobTest extends TestCase
         $baseResponse = $this->baseRequest(['method' => 'get']);
 
         $this->artisan('queue:work --once');
-
 
         $this
             ->testClient
@@ -107,6 +108,14 @@ class CallWebhookJobTest extends TestCase
 
         $this->baseWebhook()->dispatch();
 
+        $this->mock(ExponentialBackoffStrategy::class, function (MockInterface $mock) {
+            $mock->shouldReceive('waitInSecondsAfterAttempt')->withArgs([1])->once()->andReturns(10);
+            $mock->shouldReceive('waitInSecondsAfterAttempt')->withArgs([2])->once()->andReturns(100);
+            $mock->shouldReceive('waitInSecondsAfterAttempt')->withArgs([3])->never();
+
+            return $mock;
+        });
+
         $this->artisan('queue:work --once');
         Event::assertDispatched(WebhookCallFailedEvent::class, 1);
 
@@ -129,6 +138,21 @@ class CallWebhookJobTest extends TestCase
         Event::assertDispatched(WebhookCallFailedEvent::class, 3);
         Event::assertDispatched(FinalWebhookCallFailedEvent::class, 1);
         $this->testClient->assertRequestCount(3);
+    }
+
+    /** @test */
+    public function it_sets_the_response_field_on_request_failure()
+    {
+        $this->testClient->throwRequestException();
+
+        $this->baseWebhook()->dispatch();
+
+        $this->artisan('queue:work --once');
+        Event::assertDispatched(WebhookCallFailedEvent::class, function (WebhookCallFailedEvent $event) {
+            $this->assertNotNull($event->response);
+
+            return true;
+        });
     }
 
     protected function baseWebhook(): WebhookCall
@@ -158,4 +182,3 @@ class CallWebhookJobTest extends TestCase
         return array_merge($defaultProperties, $overrides);
     }
 }
-
