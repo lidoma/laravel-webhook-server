@@ -33,7 +33,7 @@ class TestClient
         if ($this->throwConnectionException) {
             throw new ConnectException(
                 'Request timeout',
-                new Request($method, $url),
+                new Request($method, $url)
             );
         }
 
