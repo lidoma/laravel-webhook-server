@@ -10,13 +10,13 @@ use PHPUnit\Framework\Assert;
 
 class TestClient
 {
-    private array $requests = [];
+    private $requests = [];
 
-    private int $useResponseCode = 200;
+    private $useResponseCode = 200;
 
-    private bool $throwRequestException = false;
+    private $throwRequestException = false;
 
-    private bool $throwConnectionException = false;
+    private $throwConnectionException = false;
 
     public function request(string $method, string $url, array $options)
     {

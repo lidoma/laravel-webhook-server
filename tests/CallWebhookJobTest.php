@@ -14,7 +14,7 @@ use Spatie\WebhookServer\WebhookCall;
 
 class CallWebhookJobTest extends TestCase
 {
-    private TestClient $testClient;
+    private $testClient;
 
     public function setUp(): void
     {
