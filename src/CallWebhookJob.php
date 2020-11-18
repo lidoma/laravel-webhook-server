@@ -4,65 +4,55 @@ namespace Spatie\WebhookServer;
 
 use Exception;
 use GuzzleHttp\Client;
-use Illuminate\Support\Str;
-use Illuminate\Bus\Queueable;
-use Illuminate\Queue\SerializesModels;
-use Illuminate\Queue\InteractsWithQueue;
+use GuzzleHttp\Exception\ConnectException;
 use GuzzleHttp\Exception\RequestException;
+use GuzzleHttp\Psr7\Response;
+use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
+use Illuminate\Queue\InteractsWithQueue;
+use Illuminate\Queue\SerializesModels;
+use Illuminate\Support\Str;
+use Spatie\WebhookServer\Events\FinalWebhookCallFailedEvent;
 use Spatie\WebhookServer\Events\WebhookCallFailedEvent;
 use Spatie\WebhookServer\Events\WebhookCallSucceededEvent;
-use Spatie\WebhookServer\Events\FinalWebhookCallFailedEvent;
 
 class CallWebhookJob implements ShouldQueue
 {
     use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
 
-    /** @var string */
-    public $webhookUrl;
+    public ?string $webhookUrl = null;
 
-    /** @var string */
-    public $httpVerb;
+    public string $httpVerb;
 
-    /** @var int */
-    public $tries;
+    public int $tries;
 
-    /** @var int */
-    public $requestTimeout;
+    public int $requestTimeout;
 
-    /** @var string */
-    public $backoffStrategyClass;
+    public string $backoffStrategyClass;
 
-    /** @var string */
-    public $signerClass;
+    public ?string $signerClass = null;
 
-    /** @var array */
-    public $headers = [];
+    public array $headers = [];
 
-    /** @var bool */
-    public $verifySsl;
+    public bool $verifySsl;
 
     /** @var string */
     public $queue;
 
-    /** @var array */
-    public $payload = [];
+    public array $payload = [];
 
-    /** @var array */
-    public $meta = [];
+    public array $meta = [];
 
-    /** @var array */
-    public $tags = [];
+    public array $tags = [];
 
-    /** @var \GuzzleHttp\Psr7\Response|null */
-    private $response;
+    public string $uuid = '';
 
-    /** @var string */
-    private $errorType;
+    private ?Response $response = null;
 
-    /** @var string */
-    private $errorMessage;
+    private ?string $errorType = null;
+
+    private ?string $errorMessage = null;
 
     public function handle()
     {
@@ -72,12 +62,15 @@ class CallWebhookJob implements ShouldQueue
         $lastAttempt = $this->attempts() >= $this->tries;
 
         try {
-            $this->response = $client->request($this->httpVerb, $this->webhookUrl, [
+            $body = strtoupper($this->httpVerb) === 'GET'
+                ? ['query' => $this->payload]
+                : ['body' => json_encode($this->payload)];
+
+            $this->response = $client->request($this->httpVerb, $this->webhookUrl, array_merge([
                 'timeout' => $this->requestTimeout,
-                'body' => json_encode($this->payload),
                 'verify' => $this->verifySsl,
                 'headers' => $this->headers,
-            ]);
+            ], $body));
 
             if (! Str::startsWith($this->response->getStatusCode(), 2)) {
                 throw new Exception('Webhook call failed');
@@ -89,6 +82,11 @@ class CallWebhookJob implements ShouldQueue
         } catch (Exception $exception) {
             if ($exception instanceof RequestException) {
                 $this->response = $exception->getResponse();
+                $this->errorType = get_class($exception);
+                $this->errorMessage = $exception->getMessage();
+            }
+
+            if ($exception instanceof ConnectException) {
                 $this->errorType = get_class($exception);
                 $this->errorMessage = $exception->getMessage();
             }
@@ -134,7 +132,8 @@ class CallWebhookJob implements ShouldQueue
             $this->attempts(),
             $this->response,
             $this->errorType,
-            $this->errorMessage
+            $this->errorMessage,
+            $this->uuid
         ));
     }
 }

@@ -2,6 +2,46 @@
 
 All notable changes to `laravel-webhook-server` will be documented in this file
 
+## 1.10.0 - 2020-10-04
+
+- add `getUuid`
+
+## 1.9.3 - 2020-09-09
+
+- support Guzzle 7
+
+## 1.9.2 - 2020-09-09
+
+- support Laravel 8
+
+## 1.9.1 - 2020-04-10
+
+- do not use body in GET request (#43)
+
+## 1.9.0 - 2020-03-19
+
+- add `doNotSign`
+
+## 1.8.1 - 2020-03-19
+
+- fix `uuid`
+
+## 1.8.0 - 2020-03-18
+
+- add `uuid`
+
+## 1.7.0 - 2020-03-05
+
+- add `dispatchNow` (#39)
+
+## 1.6.0 - 2020-03-02
+
+- add support for Laravel 7
+
+## 1.5.0 - 2019-12-08
+
+- drop support for PHP 7.3
+
 ## 1.4.0 - 2019-09-05
 
 - add error info to the dispatched event

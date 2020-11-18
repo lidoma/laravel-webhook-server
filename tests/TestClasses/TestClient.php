@@ -2,21 +2,21 @@
 
 namespace Spatie\WebhookServer\Tests\TestClasses;
 
+use GuzzleHttp\Exception\ConnectException;
+use GuzzleHttp\Exception\RequestException;
 use GuzzleHttp\Psr7\Request;
 use GuzzleHttp\Psr7\Response;
 use PHPUnit\Framework\Assert;
-use GuzzleHttp\Exception\ConnectException;
-use GuzzleHttp\Exception\RequestException;
 
 class TestClient
 {
-    private $requests = [];
+    private array $requests = [];
 
-    private $useResponseCode = 200;
+    private int $useResponseCode = 200;
 
-    private $throwRequestException = false;
+    private bool $throwRequestException = false;
 
-    private $throwConnectionException = false;
+    private bool $throwConnectionException = false;
 
     public function request(string $method, string $url, array $options)
     {

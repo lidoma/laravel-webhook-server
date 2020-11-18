@@ -3,11 +3,11 @@
 namespace Spatie\WebhookServer\Tests;
 
 use Illuminate\Support\Facades\Queue;
-use Spatie\WebhookServer\WebhookCall;
 use Spatie\WebhookServer\CallWebhookJob;
-use Spatie\WebhookServer\Exceptions\InvalidSigner;
 use Spatie\WebhookServer\Exceptions\CouldNotCallWebhook;
 use Spatie\WebhookServer\Exceptions\InvalidBackoffStrategy;
+use Spatie\WebhookServer\Exceptions\InvalidSigner;
+use Spatie\WebhookServer\WebhookCall;
 
 class WebhookTest extends TestCase
 {
@@ -59,6 +59,14 @@ class WebhookTest extends TestCase
     }
 
     /** @test */
+    public function it_will_not_throw_an_exception_if_there_is_not_secret_and_the_request_should_not_be_signed()
+    {
+        WebhookCall::create()->doNotSign()->url('https://localhost')->dispatch();
+
+        $this->assertTrue(true);
+    }
+
+    /** @test */
     public function it_will_throw_an_exception_when_using_an_invalid_backoff_strategy()
     {
         $this->expectException(InvalidBackoffStrategy::class);
@@ -72,5 +80,14 @@ class WebhookTest extends TestCase
         $this->expectException(InvalidSigner::class);
 
         WebhookCall::create()->signUsing(static::class);
+    }
+
+    /** @test */
+    public function it_can_get_the_uuid_property()
+    {
+        $webhookCall = WebhookCall::create()->uuid('my-unique-identifier');
+
+        $this->assertIsString($webhookCall->getUuid());
+        $this->assertSame('my-unique-identifier', $webhookCall->getUuid());
     }
 }
